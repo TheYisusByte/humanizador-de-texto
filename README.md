@@ -1,255 +1,161 @@
 ---
 # 📄 Manual de Documentación Técnica
-**Desarrollado y automatizado bajo la arquitectura de: YisusByte
+**Desarrollado y automatizado bajo la arquitectura de: YisusByte** 🛠️🚀
 ---
-
- He analizado el código fuente de este proyecto. A continuación, se presenta una documentación técnica completa en formato Markdown.
 
 ---
 
 ## 1. ¿Qué hace este proyecto?
 
-Este proyecto implementa una aplicación web interactiva diseñada para **humanizar y corregir la redacción de documentos de Microsoft Word (.docx)** utilizando capacidades de Inteligencia Artificial (IA) generativa, específicamente los modelos de Google Gemini. Su objetivo principal es transformar textos que puedan sonar automáticos, robóticos, monótonos o con una "sensación de IA" en una prosa más natural, fluida, conversacional y empática, manteniendo la integridad del contenido informativo.
+Este proyecto es un **Humanizador y Corregidor de Documentos Word** impulsado por Inteligencia Artificial. Su función principal es procesar documentos de texto en formato `.docx` y reescribir su contenido utilizando los modelos lingüísticos avanzados de **Google Gemini** para que tengan un tono más natural, fluido, conversacional y empático. Al hacerlo, elimina estructuras monótonas o excesivamente formales típicamente asociadas con textos generados por máquinas o redactores robóticos, sin alterar la precisión de la información de fondo (datos históricos, técnicos o argumentales).
 
-La aplicación opera a través de una interfaz de usuario sencilla (construida con Streamlit) que guía al usuario por el siguiente flujo:
+### Propósito y Arquitectura Funcional
+El sistema actúa en un flujo de tres fases:
+1. **Ingesta e Interfaz**: Un usuario carga un archivo `.docx` a través de una interfaz de usuario web interactiva y segura construida en Streamlit.
+2. **Procesamiento de Lenguaje Natural**: El texto extraído es enviado mediante una petición estructurada (*prompt engineering*) a la API de **Google Generative AI (Gemini)**.
+3. **Reconstrucción e Inyección de Metadata**: La respuesta de la IA se formatea de vuelta a un archivo `.docx` válido en memoria y se le inyectan propiedades específicas del documento (como autoría y comentarios personalizados) antes de ofrecerlo al usuario para su descarga inmediata.
 
-1.  **Carga de Documento**: El usuario sube un archivo `.docx`.
-2.  **Extracción y Previsualización**: La aplicación extrae el texto del documento y lo muestra para una previsualización.
-3.  **Configuración de IA**: El usuario introduce una clave API de Google Gemini.
-4.  **Procesamiento por IA**: El texto es enviado a un modelo Gemini junto con un "prompt" cuidadosamente diseñado que le instruye sobre cómo reescribirlo para sonar más humano, aplicando reglas como variar la longitud de las oraciones, usar conectores naturales y mantener la información original.
-5.  **Visualización de Resultado**: El texto reescrito por la IA se muestra en la interfaz.
-6.  **Descarga**: El usuario puede descargar el texto humanizado en un nuevo archivo `.docx`.
+### Tecnologías, Frameworks y Dependencias
+El ecosistema del software se basa exclusivamente en tecnologías del entorno **Python**:
+*   **Streamlit (`streamlit`)**: Framework utilizado para diseñar y renderizar la interfaz de usuario web de manera ágil sin requerir complejas infraestructuras de Frontend tradicionales (HTML/JS/CSS).
+*   **Google Generative AI SDK (`google-generativeai`)**: Biblioteca oficial de Google para interactuar con los modelos generativos avanzados de Gemini (`gemini-1.5-flash`, `gemini-3.5-flash`, etc.).
+*   **python-docx (`docx`)**: Librería robusta para leer, manipular y escribir archivos con formato Open XML (`.docx`), esencial para el manejo de archivos Microsoft Word.
+*   **BytesIO (`io`)**: Módulo de la biblioteca estándar de Python para gestionar flujos de datos en memoria (Buffers), evitando la escritura temporal innecesaria en el disco del servidor.
 
-**Tecnologías, Frameworks y Dependencias Utilizadas:**
-
-*   **Python**: Lenguaje de programación principal del proyecto.
-*   **Streamlit**: Framework de Python utilizado para construir rápidamente la interfaz de usuario web de la aplicación. Es ideal para crear herramientas interactivas y demos de IA.
-*   **Google Generative AI (Gemini API)**: Biblioteca de Python (`google-generativeai`) para interactuar con los modelos de IA generativa de Google. Es el motor de inteligencia artificial que realiza la tarea de reescritura y humanización del texto. El modelo por defecto utilizado es `models/gemini-3.5-flash`, pero se permite la configuración de otros modelos.
-*   **`python-docx`**: Biblioteca de Python (`docx`) para crear, leer y modificar archivos de Microsoft Word (.docx). Fundamental para la ingesta y la salida de documentos.
-*   **`io`**: Módulo estándar de Python para trabajar con flujos de entrada/salida. Se utiliza específicamente `io.BytesIO` para manejar el documento Word en memoria antes de la descarga, evitando operaciones de disco innecesarias.
-*   **`os`**: Módulo estándar de Python utilizado en el script de utilidad para interactuar con el sistema operativo, principalmente para acceder a variables de entorno (como una API Key).
+---
 
 ## 2. Estructura del Proyecto
 
-El proyecto se organiza en tres archivos principales de Python, cada uno con una función específica:
+El sistema está diseñado de manera modular y compacta. A continuación se describe la distribución de sus componentes clave:
 
+```text
+📂 root-del-proyecto/
+├── 📄 app_humanizador.py   # Aplicación web principal en Streamlit (versión con selector de modelo).
+├── 📄 humanizador.py       # Script semilla/generador que escribe en disco la app con metadatos personalizados.
+└── 📄 list_models.py       # Script utilitario para auditar los modelos de Gemini disponibles en la API Key.
 ```
-.
-├── app_humanizador.py         # La aplicación web principal de humanización de Word.
-├── humanizador.py             # Un script de utilidad que genera/escribe el archivo app_humanizador.py.
-└── list_models.py             # Un script de utilidad para listar los modelos disponibles de Google Gemini.
-```
 
-*   **`app_humanizador.py`**: Este es el archivo ejecutable de la aplicación web. Contiene toda la lógica de la interfaz de usuario con Streamlit, la interacción con la API de Google Gemini para el procesamiento del texto, y la manipulación de documentos Word para leer el input y generar el output. Es el punto de entrada para el usuario final.
+### Flujo de Interacción de Componentes
+1. **Generación Inicial (`humanizador.py`)**: Este script puede utilizarse en fases de despliegue para sobrescribir o inicializar la aplicación base `app_humanizador.py` de forma automatizada, configurando propiedades internas del archivo final tales como el autor del metadato (`YisusByte`).
+2. **Ciclo de Ejecución Principal (`app_humanizador.py`)**:
+   * El cliente accede vía navegador.
+   * El cliente provee su clave de API de Gemini y un documento `.docx`.
+   * El parser interno descompone el documento párrafo por párrafo.
+   * Se evalúa el texto, se construye el prompt optimizado y se envía al modelo LLM.
+   * Se procesa la respuesta de manera defensiva (mitigando nulos o estructuras vacías).
+   * Se empaqueta en un nuevo binario descargable.
+3. **Diagnóstico (`list_models.py`)**: Un servicio auxiliar ejecutado en terminal que permite al administrador de sistemas o desarrollador validar qué modelos de LLM están activos bajo la API Key del cliente, evitando errores de ejecución por llamadas a modelos deprecados o inexistentes.
 
-*   **`humanizador.py`**: Este archivo actúa como un *script generador*. Su propósito es escribir (o sobrescribir) el contenido de un archivo llamado `app_humanizador.py`. Es notable que la versión de `app_humanizador.py` que genera tiene algunas diferencias menores respecto al `app_humanizador.py` proporcionado directamente, como el modelo Gemini por defecto (`gemini-1.5-flash` vs `gemini-3.5-flash`) y la adición de metadatos de autoría al documento generado. Este script no es parte de la ejecución normal de la aplicación, sino una herramienta para crear o actualizar el archivo principal de la aplicación.
-
-*   **`list_models.py`**: Este es un script de utilidad independiente. Su función es ayudar a los desarrolladores a verificar y listar los nombres de los modelos de IA generativa de Google Gemini a los que tienen acceso con su clave API. Es útil para depuración o para conocer qué opciones de modelo se pueden usar en `app_humanizador.py`.
+---
 
 ## 3. Explicación de Módulos (Paso a Paso)
 
-A continuación, se detalla el rol y la funcionalidad de cada archivo analizado:
+### 📄 Módulo 1: `app_humanizador.py`
+Este es el motor de la interfaz web y orquestador del servicio.
 
-### `app_humanizador.py` (Aplicación Principal)
+*   **Configuración e inicialización (`st.set_page_config`, `st.title`)**: Configura el contenedor web del navegador con el título, layouts centrados y un icono representativo de edición de textos.
+*   **Barra Lateral de Configuración**:
+    *   Entrada protegida para la `api_key` de Gemini (enmascarada con `type="password"`).
+    *   Entrada interactiva para especificar el modelo a usar (`models/gemini-3.5-flash` por defecto).
+*   **Lectura de Archivos**:
+    ```python
+    doc = Document(uploaded_file)
+    texto_completo = []
+    for parrafo in doc.paragraphs:
+        if parrafo.text.strip():
+            texto_completo.append(parrafo.text)
+    ```
+    Este fragmento ignora líneas vacías y extrae únicamente texto útil del archivo subido para optimizar los tokens enviados a la API.
+*   **Llamada Segura a la API (Lógica Defensiva)**:
+    Instancia el modelo y define un fallback para extraer el texto generado por Gemini:
+    ```python
+    texto_humanizado = getattr(respuesta, 'text', None)
+    if texto_humanizado is None:
+        if hasattr(respuesta, 'candidates') and respuesta.candidates:
+            texto_humanizado = getattr(respuesta.candidates[0], 'text', str(respuesta.candidates[0]))
+    ```
+    *Garantiza que, si la estructura interna del JSON de respuesta cambia de versión, la aplicación capture el texto de forma segura sin romperse.*
+*   **Reconstrucción y Descarga**: Reconstruye la estructura del Word agregando párrafos basados en separadores de salto de línea doble (`\n\n`), los almacena temporalmente en un buffer de tipo `io.BytesIO` y dispara un disparador de descarga (`st.download_button`).
 
-Este archivo es la implementación completa de la aplicación web interactiva.
+### 📄 Módulo 2: `humanizador.py`
+Actúa como un **Generador de Código** o archivo semilla de auto-despliegue.
 
-1.  **Importaciones**:
-    *   `streamlit as st`: Importa el framework para construir la UI.
-    *   `google.generativeai as genai`: Importa el SDK de Gemini.
-    *   `docx.Document`: Importa la clase para manejar documentos Word.
-    *   `io`: Importa el módulo para operaciones de E/S en memoria.
+*   **Propósito**: Almacena en la variable `code_content` una versión preconfigurada de la aplicación interactiva que incluye personalizaciones específicas y metadatos de autoría para los archivos Word generados:
+    ```python
+    core_properties = doc_salida.core_properties
+    core_properties.author = "YisusByte 🛠️🚀"
+    core_properties.comments = "Documento corregido y humanizado..."
+    ```
+*   **Operación I/O**: Abre un puntero de archivo y escribe el contenido encapsulado con codificación `utf-8` para prevenir problemas de decodificación de emojis y caracteres especiales en sistemas Linux y Windows.
 
-2.  **Configuración Inicial de Streamlit**:
-    *   `st.set_page_config(...)`: Configura el título de la pestaña del navegador, el icono de la página y el diseño general (centrado).
-    *   `st.title(...)` y `st.write(...)`: Muestran el título principal de la aplicación y una breve descripción en la interfaz de usuario.
+### 📄 Módulo 3: `list_models.py`
+Script de backend utilitario.
 
-3.  **Barra Lateral (`st.sidebar`)**:
-    *   `st.sidebar.header("Configuración")`: Define el encabezado de la sección de configuración.
-    *   `api_key = st.sidebar.text_input("Introduce tu Gemini API Key:", type="password", key='api_key')`: Un campo de entrada de texto para la API Key de Gemini. El `type="password"` oculta la entrada, y `key='api_key'` asegura una identificación única del widget.
-    *   `model_name = st.sidebar.text_input("Modelo a usar:", value="models/gemini-3.5-flash", key='model_name')`: Permite al usuario especificar qué modelo Gemini usar, con un valor por defecto.
-    *   `st.sidebar.markdown(...)`: Proporciona enlaces útiles para obtener la API Key.
+*   **Propósito**: Ayuda a diagnosticar incompatibilidades de API.
+*   **Mecanismo**: Recupera la credencial de forma segura desde las variables de entorno (`os.environ.get("GENAI_API_KEY")`) o por consola en su defecto. Llama a la función del SDK `genai.list_models()` e imprime en consola la nomenclatura exacta de cada modelo habilitado. Esto evita que el usuario ingrese strings incorrectos de modelos en la aplicación principal.
 
-4.  **Carga de Archivo Word**:
-    *   `uploaded_file = st.file_uploader("Elige un archivo de Word (.docx)", type=["docx"])`: Widget para que el usuario suba un archivo. Solo acepta archivos `.docx`.
-
-5.  **Lógica de Procesamiento Principal (`if uploaded_file:` bloque)**:
-    *   **Validación de API Key**: `if not api_key:` muestra una advertencia si la API Key no se ha introducido.
-    *   **Configuración de Gemini**: `genai.configure(api_key=api_key)` inicializa el cliente de la API con la clave proporcionada.
-    *   **Lectura del Documento**:
-        *   `doc = Document(uploaded_file)`: Carga el archivo subido en un objeto `Document`.
-        *   Un bucle extrae el texto de cada párrafo del documento y lo concatena en `texto_original`, separando los párrafos con dos saltos de línea.
-    *   **Previsualización del Texto Original**: `st.text_area("Texto detectado:", texto_original, ...)` muestra el texto extraído en un área de texto deshabilitada.
-    *   **Botón de Humanización**: `if st.button("✨ Humanizar y Corregir Texto"):` activa el proceso de IA.
-        *   `with st.spinner(...)`: Muestra un indicador de carga mientras la IA procesa.
-        *   **Definición del Prompt**: Se construye un `prompt` multi-línea detallado que instruye al modelo Gemini sobre cómo debe reescribir el texto. Este prompt incluye reglas críticas para la "humanización" (variación de longitud de oraciones, conectores, mantenimiento de la información, etc.).
-        *   **Invocación del Modelo**:
-            *   `modelo = genai.GenerativeModel(model_name)`: Instancia el modelo Gemini con el nombre especificado.
-            *   `respuesta = modelo.generate_content(prompt)`: Envía el prompt al modelo y obtiene la respuesta.
-        *   **Manejo de Errores de Modelo**: Un bloque `try-except` captura errores comunes al invocar la API de Gemini (ej., clave incorrecta, modelo inválido).
-        *   **Extracción del Texto Humanizado**: `texto_humanizado = getattr(respuesta, 'text', None)` extrae el texto generado de la respuesta del modelo, con lógica de fallback si la estructura de la respuesta no es la esperada.
-    *   **Visualización del Resultado**: `st.text_area("Resultado:", texto_humanizado, ...)` muestra el texto procesado por la IA.
-    *   **Generación y Descarga del Nuevo Word**:
-        *   `doc_salida = Document()`: Crea un nuevo documento Word vacío.
-        *   El `texto_humanizado` se divide en párrafos y se añade al `doc_salida`.
-        *   `buffer = io.BytesIO()`: Crea un búfer en memoria.
-        *   `doc_salida.save(buffer)`: Guarda el documento recién creado en el búfer.
-        *   `buffer.seek(0)`: Reposiciona el puntero del búfer al inicio para la lectura.
-        *   `st.download_button(...)`: Proporciona un botón para descargar el archivo Word generado, con un nombre de archivo predefinido y tipo MIME correcto.
-
-6.  **Manejo de Errores Generales**:
-    *   `except Exception as e:`: Captura cualquier excepción no manejada durante el procesamiento del archivo Word y muestra un mensaje de error al usuario.
-
-### `humanizador.py` (Script de Generación/Ejemplo)
-
-Este archivo es un script auxiliar cuyo único propósito es generar (escribir) el archivo `app_humanizador.py`.
-
-1.  **`code_content = """..."""`**: Contiene una cadena de texto multi-línea que es el código fuente completo de una versión de la aplicación `app_humanizador.py`. Esta versión incrustada difiere de la `app_humanizador.py` principal en:
-    *   El modelo Gemini por defecto usado (`gemini-1.5-flash` directamente en la llamada al modelo).
-    *   La falta del parámetro `key` en `st.sidebar.text_input` para la API key.
-    *   La falta del input para seleccionar el nombre del modelo.
-    *   La adición de metadatos de autoría (`core_properties.author`, `core_properties.comments`) al documento Word de salida.
-2.  **Escritura del Archivo**:
-    *   `with open("app_humanizador.py", "w", encoding="utf-8") as f: f.write(code_content)`: Abre el archivo `app_humanizador.py` en modo escritura (`"w"`) y escribe todo el contenido de `code_content` en él, sobrescribiendo cualquier contenido existente.
-3.  **Confirmación**:
-    *   `print("Archivo creado exitosamente.")`: Muestra un mensaje en la consola confirmando que la operación se realizó.
-
-**Propósito**: Este script podría ser utilizado para una distribución simplificada o para recrear una versión específica del archivo de la aplicación, posiblemente como base o plantilla para futuros desarrollos.
-
-### `list_models.py` (Script de Utilidad)
-
-Este script de consola es una herramienta para desarrolladores que desean inspeccionar qué modelos de Google Gemini están disponibles para su API Key.
-
-1.  **Importaciones**:
-    *   `google.generativeai as genai`: Para interactuar con la API de Gemini.
-    *   `os`: Para acceder a variables de entorno.
-
-2.  **Obtención de API Key**:
-    *   `api_key = os.environ.get("GENAI_API_KEY")`: Intenta obtener la API Key de una variable de entorno llamada `GENAI_API_KEY`. Esta es una práctica recomendada para la seguridad.
-    *   Si no la encuentra, `api_key = input("Introduce tu Gemini API Key: ").strip()` solicita al usuario que la introduzca por consola.
-    *   Si no se proporciona ninguna clave, el script imprime un mensaje y sale.
-
-3.  **Configuración de Gemini**:
-    *   `genai.configure(api_key=api_key)`: Inicializa el cliente de la API con la clave obtenida.
-
-4.  **Listado de Modelos**:
-    *   `for m in genai.list_models():`: Itera sobre la lista de modelos devuelta por `genai.list_models()`.
-    *   Dentro del bucle, se utiliza `getattr(m, "name", None) or ...` para extraer el nombre del modelo de varias posibles ubicaciones dentro del objeto `m`, asegurando la compatibilidad y robustez.
-    *   `print(name)`: Imprime el nombre de cada modelo disponible en la consola.
+---
 
 ## 4. Conceptos y Glosario Técnico
 
-Aquí se explican los términos técnicos clave, algoritmos específicos o lógicas complejas utilizadas en el código.
+*   **Prompt Engineering (Ingeniería de Prompts)**: Es el diseño sistemático de las instrucciones proporcionadas a un modelo de IA. En este proyecto se utiliza una técnica de *instrucciones de rol y restricciones críticas* (reglas del 1 al 4) para asegurar que el modelo no asuma libertades creativas que cambien la veracidad técnica de los textos.
+*   **Buffer de Bytes (`io.BytesIO`)**: Es un flujo en memoria que simula ser un archivo binario en disco físico. Al usarlo, el servidor web no necesita escribir archivos físicos en el sistema local, optimizando significativamente la velocidad del servicio, disminuyendo el uso de almacenamiento y previniendo colisiones de archivos concurrentes entre distintos usuarios.
+*   **Metadatos de Documento (Core Properties)**: Propiedades embebidas en el contenedor ZIP que conforma un archivo `.docx`. El script `humanizador.py` edita estas propiedades (Autor y Comentario) directamente dentro de las cabeceras XML del archivo para garantizar la trazabilidad de la autoría de **YisusByte**.
+*   **Modelos Generativos Flash (`gemini-1.5-flash`/`gemini-3.5-flash`)**: Modelos optimizados de Google diseñados para tareas de análisis rápido y síntesis de texto a baja latencia y alta eficiencia en costo.
 
-*   **Streamlit**: Un framework de código abierto en Python que permite a los ingenieros y científicos de datos crear rápidamente aplicaciones web interactivas utilizando solo código Python. Elimina la necesidad de conocer HTML, CSS o JavaScript para desarrollar interfaces de usuario.
-*   **Google Gemini API**: Es una interfaz de programación de aplicaciones que permite a los desarrolladores acceder y utilizar los modelos de IA generativa de Google (como Gemini, que es una familia de modelos multimodal) en sus propias aplicaciones. Estos modelos son capaces de comprender y generar texto, imágenes, audio y video.
-*   **`python-docx`**: Una biblioteca de Python que proporciona una API para leer, escribir y modificar documentos de Microsoft Word (`.docx`). Permite manipular elementos como párrafos, encabezados, tablas, estilos, etc.
-*   **`io.BytesIO`**: Una clase del módulo `io` de Python que se comporta como un archivo binario pero opera completamente en la memoria del programa. Es útil para manejar datos binarios (como documentos Word o imágenes) sin tener que leerlos o escribirlos en el disco físico, mejorando el rendimiento y la flexibilidad.
-*   **API Key (Clave de API)**: Una cadena única de caracteres alfanuméricos que sirve como autenticador para que una aplicación o usuario acceda a un servicio web o API. Garantiza que solo los usuarios autorizados puedan consumir los recursos de la API y permite el seguimiento del uso.
-*   **Prompt Engineering (Ingeniería de Prompts)**: Es el arte y la ciencia de diseñar, refinar y optimizar las "instrucciones" o "preguntas" (conocidas como "prompts") que se le dan a un modelo de lenguaje grande (LLM) o a cualquier modelo de IA generativa. El objetivo es guiar a la IA para que genere respuestas precisas, relevantes, coherentes y con el formato deseado. Un buen prompt es crucial para obtener resultados de alta calidad.
-*   **Humanización de Texto**: En el contexto de la IA, se refiere al proceso de transformar un texto que ha sido generado por una máquina (y que por lo tanto puede sonar formal, repetitivo o artificial) en uno que suene como si hubiera sido escrito por un ser humano. Esto implica aplicar técnicas lingüísticas como variar la sintaxis, usar un vocabulario más rico y diverso, introducir conectores naturales, y adaptar el tono para que sea más conversacional y empático.
-*   **Modelos de Lenguaje Grandes (LLMs - Large Language Models)**: Son tipos de modelos de IA entrenados con vastos volúmenes de datos textuales. Son capaces de comprender, generar, traducir y resumir texto, así como de responder a preguntas de una manera conversacional. Los modelos Gemini de Google son ejemplos de LLMs avanzados.
-*   **`st.spinner`**: Un componente de Streamlit que muestra un indicador de carga (spinner) mientras se ejecuta un bloque de código. Mejora la experiencia de usuario al indicar que una operación está en curso y que la aplicación no está congelada.
+---
 
 ## 5. Guía de Instalación y Ejecución
 
-Sigue estos pasos para configurar el entorno de desarrollo, instalar las dependencias y ejecutar la aplicación.
+Sigue estos pasos lógicos para configurar el entorno y poner en marcha el proyecto en cualquier sistema operativo local o servidor en la nube.
 
-### Requisitos Previos
+### Paso 1: Clonar o Descargar el Proyecto
+Asegúrate de tener los archivos fuente en un mismo directorio local:
+```bash
+📂 humanizador-word/
+├── app_humanizador.py
+├── humanizador.py
+└── list_models.py
+```
 
-*   **Python 3.8 o superior**: Asegúrate de tener una versión compatible de Python instalada en tu sistema. Puedes descargarla desde el sitio web oficial: [python.org](https://www.python.org/downloads/).
-*   **Google Gemini API Key**: Necesitarás una clave de API válida para acceder a los modelos de Google Gemini. Puedes obtenerla de forma gratuita en [Google AI Studio](https://aistudio.google.com/app/apikey).
+### Paso 2: Crear un Entorno Virtual de Python
+Es una buena práctica para aislar las dependencias de este software y evitar conflictos con otras librerías del sistema.
 
-### 1. Preparar el Entorno
+*En macOS/Linux:*
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-Es una buena práctica utilizar entornos virtuales para aislar las dependencias del proyecto.
+*En Windows (PowerShell):*
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
 
-1.  **Clonar o Descargar el Proyecto**:
-    Si tienes los archivos en un repositorio Git, clónalo:
-    ```bash
-    git clone <URL_DEL_REPOSITORIO>
-    cd <nombre_del_directorio_del_proyecto>
-    ```
-    Si tienes los archivos sueltos, simplemente colócalos en una carpeta dedicada para el proyecto.
-
-2.  **Crear un Entorno Virtual**:
-    Abre tu terminal o línea de comandos en el directorio raíz del proyecto y ejecuta:
-    ```bash
-    python -m venv venv
-    ```
-
-3.  **Activar el Entorno Virtual**:
-    *   **En Windows (CMD):**
-        ```bash
-        .\venv\Scripts\activate
-        ```
-    *   **En Windows (PowerShell):**
-        ```powershell
-        .\venv\Scripts\Activate.ps1
-        ```
-    *   **En macOS/Linux:**
-        ```bash
-        source venv/bin/activate
-        ```
-    Verás `(venv)` al inicio de tu prompt de terminal, indicando que el entorno virtual está activo.
-
-### 2. Instalar Dependencias del Proyecto
-
-Con el entorno virtual activado, instala todas las librerías necesarias utilizando `pip`:
-
+### Paso 3: Instalar las Dependencias requeridas
+Ejecuta el gestor de paquetes `pip` para instalar los requerimientos del proyecto:
 ```bash
 pip install streamlit google-generativeai python-docx
 ```
 
-### 3. (Opcional) Listar Modelos de Gemini Disponibles
-
-Puedes usar el script `list_models.py` para verificar qué modelos de Gemini están accesibles con tu API Key.
-
-1.  **Configurar la API Key (recomendado)**:
-    Para mayor seguridad y comodidad, puedes establecer tu API Key como una variable de entorno `GENAI_API_KEY`.
-    *   **En Windows (CMD, solo para la sesión actual):**
-        ```bash
-        set GENAI_API_KEY=TU_API_KEY_DE_GEMINI
-        ```
-    *   **En Windows (PowerShell, solo para la sesión actual):**
-        ```powershell
-        $env:GENAI_API_KEY="TU_API_KEY_DE_GEMINI"
-        ```
-    *   **En macOS/Linux (solo para la sesión actual):**
-        ```bash
-        export GENAI_API_KEY="TU_API_KEY_DE_GEMINI"
-        ```
-    (Para hacerla permanente, deberías añadirla a tu perfil de usuario, como `.bashrc`, `.zshrc` o variables de entorno del sistema.)
-
-2.  **Ejecutar el script de listado de modelos**:
-    ```bash
-    python list_models.py
-    ```
-    Si no configuraste la variable de entorno, el script te pedirá que introduzcas tu API Key directamente en la consola. Esto imprimirá una lista de los nombres de los modelos disponibles.
-
-### 4. Ejecutar la Aplicación Principal
-
-Finalmente, para lanzar la aplicación web "Humanizador de Word":
-
-1.  Asegúrate de que tu entorno virtual esté activado y que todas las dependencias estén instaladas.
-2.  Ejecuta el script principal de Streamlit:
-    ```bash
-    streamlit run app_humanizador.py
-    ```
-
-3.  Streamlit iniciará un servidor web local y abrirá automáticamente la aplicación en tu navegador predeterminado (normalmente en `http://localhost:8501`).
-
-4.  **Uso de la Aplicación**:
-    *   En la barra lateral izquierda de la aplicación, **introduce tu Gemini API Key**.
-    *   (Opcional) Puedes cambiar el nombre del modelo de IA a usar en la barra lateral.
-    *   Haz clic en "Elige un archivo de Word (.docx)" y selecciona el documento que deseas humanizar.
-    *   Presiona el botón "✨ Humanizar y Corregir Texto".
-    *   Después de que la IA procese el texto, podrás ver el resultado y descargar el nuevo archivo `.docx` humanizado.
-
----
-**Nota sobre `humanizador.py`**: Si por alguna razón necesitas generar o recrear el archivo `app_humanizador.py` a partir del script `humanizador.py` (por ejemplo, si el archivo original no existe o deseas aplicar la versión definida en el generador), simplemente ejecuta:
+### Paso 4: (Opcional) Auditar modelos disponibles de Gemini
+Para verificar que tu API Key funciona correctamente y visualizar los modelos a los que tienes acceso, puedes ejecutar el script utilitario:
 ```bash
-python humanizador.py
+python list_models.py
 ```
-Esto creará o sobrescribirá `app_humanizador.py` con su contenido. Luego podrás ejecutar `streamlit run app_humanizador.py` como se describe en el punto 4.
----
+Introduce tu API Key cuando se te solicite en la terminal. Deberías ver un listado de modelos disponibles como resultado.
+
+### Paso 5: Ejecutar la Aplicación Web
+Para lanzar el servidor interactivo de Streamlit, ejecuta el siguiente comando en la consola:
+```bash
+streamlit run app_humanizador.py
+```
+
+### Paso 6: Usar la Aplicación
+1. Una vez ejecutado el comando del **Paso 5**, se abrirá automáticamente una ventana en tu navegador por defecto apuntando a la dirección `http://localhost:8501`.
+2. Introduce tu **Gemini API Key** en la barra de configuración lateral.
+3. Elige el modelo por defecto o cámbialo en el campo de texto (ej. `models/gemini-1.5-flash`).
+4. Sube tu archivo `.docx` a la zona de carga central.
+5. Presiona **✨ Humanizar y Corregir Texto**.
+6. Una vez que termine el procesamiento con IA, previsualiza el resultado y haz clic en **Descargar Word Corregido**.
