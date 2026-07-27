@@ -1,3 +1,1 @@
-app_humanizador: http://localhost:8501/
-
 clave api: TU_CLAVE_API_DE_GEMINI
