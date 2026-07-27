@@ -2,7 +2,7 @@ import google.generativeai as genai
 import os
 
 # Obtiene la API Key de la variable de entorno GENAI_API_KEY o la solicita por input
-api_key = os.environ.get("GENAI_API_KEY")
+api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
     api_key = input("Introduce tu Gemini API Key: ").strip()
 
