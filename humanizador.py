@@ -1,3 +1,18 @@
+# ==============================================================================
+# 📝 HUMANIZADOR Y CORREGIDOR DE DOCUMENTOS WORD
+# ==============================================================================
+#
+#  ✒️ AUTORÍA:
+#  Desarrollado y conceptualizado por: YisusByte 
+#
+#  📦 DEPENDENCIAS REQUERIDAS:
+#      pip install streamlit google-generativeai python-docx
+#
+#  🚀 CÓMO EJECUTAR:
+#      python -m streamlit run app_humanizador.py --server.address localhost --server.port 8501
+#
+# ==============================================================================
+
 code_content = """import streamlit as st
 import google.generativeai as genai
 from docx import Document
