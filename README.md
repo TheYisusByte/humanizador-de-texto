@@ -3,6 +3,180 @@
 **Desarrollado y automatizado bajo la arquitectura de: YisusByte** 🛠️🚀
 ---
 
+## 1. ¿Qué hace este proyecto?
+
+### Propósito Principal
+Este proyecto es una aplicación web de procesamiento de lenguaje natural (NLP) diseñada para la **humanización, corrección y reescritura estilística de documentos Microsoft Word (`.docx`)**. 
+
+El objetivo de negocio e ingenieril es tomar textos que puedan sonar monótonos, rígidos o notoriamente generados por Inteligencia Artificial, y refinarlos mediante un modelo de lenguaje grande (LLM) de la familia **Google Gemini**. El resultado conserva la totalidad del contenido semántico, técnico e histórico original, pero adopta un tono empático, fluido y conversacional, reconstruyendo dinámicamente el documento Word para su inmediata descarga.
+
+### Tecnologías, Frameworks y Dependencias
+
+| Tecnología / Librería | Versión / Ámbito | Descripción y Rol en la Arquitectura |
+| :--- | :--- | :--- |
+| **Python 3.10+** | Runtime | Lenguaje base de desarrollo. |
+| **Streamlit** | Framework Frontend/UI | Proporciona la interfaz gráfica reactiva orientada a datos y la gestión del estado de la aplicación web. |
+| **Google Generative AI SDK** | Integración LLM | Cliente oficial (`google.generativeai`) para invocar los modelos de IA conversacional/generativa de Google (Gemini). |
+| **python-docx** | Document Processing | Parseo y manipulación estructural de la especificacion OpenXML (`.docx`), tanto para lectura de párrafos como para generación de archivos salida. |
+| **io (BytesIO)** | Estándar de Python | Manejo de buffers de memoria binaria para la entrega dinámica de archivos descargables sin necesidad de I/O en disco. |
+
+---
+
+## 2. Estructura del Proyecto y Flujo de Datos
+
+### Diagrama de Distribución de Archivos
+
+```text
+.
+├── app_humanizador.py  # Aplicación principal de Streamlit (Frontend + Backend Integration)
+├── humanizador.py      # Script de automatización/bootstrapping (Generador de código fuente)
+└── list_models.py      # CLI Utility Tool para diagnóstico y listado de modelos Gemini
+```
+
+### Arquitectura de Interacción y Flujo de Trabajo
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Usuario
+    participant UI as Streamlit (app_humanizador.py)
+    participant Engine as DocX Parser (python-docx)
+    participant LLM as Google Gemini API
+    participant Buffer as In-Memory Buffer (BytesIO)
+
+    Usuario->>UI: Ingresa Gemini API Key y carga archivo .docx
+    UI->>Engine: Lee y extrae el texto de los párrafos del documento
+    Engine-->>UI: Devuelve 'texto_original' unificado
+    UI->>Usuario: Muestra vista previa del texto extraído
+    Usuario->>UI: Presiona "Humanizar y Corregir Texto"
+    UI->>LLM: Invocación con Prompt de Optimización Estilística + texto_original
+    LLM-->>UI: Devuelve 'texto_humanizado'
+    UI->>Buffer: Crea un nuevo Document() y escribe párrafos en el Buffer de memoria
+    Buffer-->>UI: Devuelve stream binario (.docx)
+    UI->>Usuario: Habilita el botón de descarga del archivo corregido
+```
+
+---
+
+## 3. Explicación Detallada de Módulos (Paso a Paso)
+
+### 3.1. `app_humanizador.py` (Módulo Principal)
+Este módulo representa el núcleo funcional de la aplicación web. Integra la interfaz gráfica, la lógica de integración con la API de IA y el formateo de documentos.
+
+#### Componentes Clave:
+1. **Configuración de UI y Sidebar:**
+   - `st.set_page_config()`: Establece el título, ícono y layout de la página web.
+   - `st.sidebar.text_input()`: Captura de la API Key (campo tipo contraseña) y selección dinámica del modelo LLM (por defecto `models/gemini-3.5-flash`).
+2. **Carga y Extracción de Documento (`python-docx`):**
+   - El widget `st.file_uploader` recibe el archivo binario `.docx`.
+   - Se iteran los párrafos (`doc.paragraphs`) ignorando cadenas vacías para construir un único bloque de texto sin pérdida de contexto (`texto_original`).
+3. **Ingeniería de Prompting (Prompt Injection Safe Pattern):**
+   - Define un sistema de reglas estrictas enviadas al modelo Gemini:
+     - Variación sintáctica y de longitud oracional.
+     - Preservación de datos argumentales/técnicos.
+     - Supresión de comentarios meta ("Aquí tienes el texto...").
+4. **Manejo de Respuestas de la API y Estrategia Fallback:**
+   - Para garantizar alta resiliencia frente a cambios en la firma del SDK de Google, implementa la extracción dinámica del atributo `text`. Si no existe, inspecciona la lista de `candidates`.
+5. **Generación In-Memory y Descarga:**
+   - Parsea el texto devuelto dividiéndolo por saltos de línea dobles (`\n\n`) para mapear cada bloque a un nuevo párrafo en un objeto `Document`.
+   - Utiliza `io.BytesIO()` para escribir el binario directamente en la RAM y disponibilizarlo mediante `st.download_button`.
+
+---
+
+### 3.2. `humanizador.py` (Script Metaprogramador / Bootstrapper)
+Este archivo funciona como un **script de aprovisionamiento o automatización de código**. 
+
+#### Función Principal:
+Contiene dentro de la variable tipo string `code_content` una versión funcional base de la aplicación Streamlit. Al ejecutarse directamente con Python (`python humanizador.py`), sobrescribe o genera el archivo `app_humanizador.py` en el directorio de trabajo local y confirma la creación por la consola estándar.
+
+*Utilidad Arquitectónica:* Permite desplegar de forma automatizada o restaurar la aplicación base a su estado por defecto en entornos de CI/CD o de prueba local.
+
+---
+
+### 3.3. `list_models.py` (Herramienta CLI de Diagnóstico)
+Un script de utilidad técnica para el desarrollador/administrador del sistema.
+
+#### Función Principal:
+1. Intenta leer la variable de entorno `GENAI_API_KEY`. Si no existe, solicita de forma interactiva la API Key mediante consola (`input()`).
+2. Configura la conexión con `google.generativeai.configure()`.
+3. Invoca la función `genai.list_models()` e imprime en pantalla el identificador exacto de todos los modelos soportados por la credencial provista.
+
+*Utilidad Arquitectónica:* Ayuda a validar cuotas, permisos y disponibilidad de nuevos modelos (ej. comprobar la existencia de `gemini-1.5-flash`, `gemini-2.5`, etc.) antes de configurarlos en la interfaz gráfica.
+
+---
+
+## 4. Conceptos y Glosario Técnico
+
+* **In-Memory I/O Streaming (`io.BytesIO`)**:
+  Estrategia donde los archivos binarios generados se almacenan temporalmente en la memoria RAM como una secuencia de bytes, en lugar de escribirse en el disco duro. Esto optimiza el rendimiento I/O y previene colisiones en entornos multiusuario concurrentes.
+* **Prompt Engineering (Zero-Shot Style Transfer)**:
+  Diseño estructurado de instrucciones para un modelo de IA sin necesidad de reentrenamiento (*fine-tuning*). Se definen directivas de comportamiento y restricciones críticas para transformar el estilo del texto manteniendo la semántica.
+* **OpenXML Parsing (`python-docx`)**:
+  Técnica de deconstrucción del formato estándar de Microsoft Word (`.docx`), el cual es internamente un conjunto de archivos XML comprimidos en `.zip`. La librería mapea estos XMLs a objetos orientados a objetos de Python (`Document`, `Paragraph`).
+* **SDK Fallback Handling**:
+  Patrón de programación defensiva mediante reflexión (`getattr`, `hasattr`) que previene fallos catastróficos en producción si la API de terceros altera la estructura interna del objeto de respuesta (`response.text` vs `response.candidates`).
+
+---
+
+## 5. Guía de Instalación y Ejecución
+
+Sigue estos pasos para desplegar el entorno de desarrollo e iterar sobre el proyecto:
+
+### Paso 1: Clonar / Preparar el Directorio de Trabajo
+Asegúrate de tener todos los archivos (`app_humanizador.py`, `humanizador.py`, `list_models.py`) en la misma carpeta raíz.
+
+### Paso 2: Crear y Activar un Entorno Virtual
+Es una buena práctica de ingeniería aislar las dependencias:
+
+**En Linux / macOS:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**En Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+### Paso 3: Instalación de Dependencias
+Instala los paquetes de Python requeridos utilizando `pip`:
+
+```bash
+pip install streamlit google-generativeai python-docx
+```
+
+### Paso 4: Validar Modelos Disponibles (Opcional)
+Puedes ejecutar el script de utilidad para verificar que tu API Key funciona adecuadamente:
+
+```bash
+python list_models.py
+```
+
+### Paso 5: Ejecución de la Aplicación Web
+Para lanzar la interfaz gráfica de Streamlit, ejecuta en la terminal:
+
+```bash
+streamlit run app_humanizador.py
+```
+
+Si deseas especificar la dirección del servidor y el puerto local de forma explícita:
+
+```bash
+python -m streamlit run app_humanizador.py --server.address localhost --server.port 8501
+```
+
+### Paso 6: Uso del Sistema
+1. Abre tu navegador e ingresa a la URL provista por Streamlit (habitualmente `http://localhost:8501`).
+2. En la barra lateral (**Configuración**), introduce tu **Gemini API Key** obtenida en [Google AI Studio](https://aistudio.google.com/).
+3. Arrastra y suelta tu archivo `.docx`.
+4. Haz clic en **"✨ Humanizar y Corregir Texto"**.
+5. Al finalizar el procesamiento, haz clic en **"📥 Descargar Word Corregido"**.---
+# 📄 Manual de Documentación Técnica
+**Desarrollado y automatizado bajo la arquitectura de: YisusByte** 🛠️🚀
+---
+
 ---
 
 ## 1. ¿Qué hace este proyecto?
