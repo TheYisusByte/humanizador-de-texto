@@ -15,8 +15,8 @@ api_key = st.sidebar.text_input("Introduce tu Gemini API Key:", type="password",
 
 # Backend y modelo: por ahora implementamos Gemini 2.5 (un solo modelo estable)
 # Usaremos exclusivamente Gemini 2.5 por defecto
-model_name = st.sidebar.text_input("Modelo a usar:", value="models/gemini-3.5-flash", key='model_name')
-st.sidebar.markdown("Usando `models/gemini-3.5-flash` como modelo por defecto. Cambia el nombre solo si sabes otro modelo válido disponible para tu API Key.")
+model_name = st.sidebar.text_input("Modelo a usar:", value="models/gemini-3.6-flash", key='model_name')
+st.sidebar.markdown("Usando `models/gemini-3.6-flash` como modelo por defecto. Cambia el nombre solo si sabes otro modelo válido disponible para tu API Key.")
 
 # Enlace de ayuda para obtener la API Key
 st.sidebar.markdown("[¿Cómo obtener una API Key?](https://aistudio.google.com/)")
